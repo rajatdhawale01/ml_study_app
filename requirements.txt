@@ -1,0 +1,12 @@
+# Web framework
+Flask>=3.0,<4.0
+
+# HTTP client (for Google reCAPTCHA verify call)
+requests>=2.31,<3.0
+
+# Load secrets (optional—only if you use a .env file)
+python-dotenv>=1.0,<2.0
+
+# Prod server (optional; for Linux/mac deploys; not needed for `flask run`)
+gunicorn>=21.2,<22.0
+waitress>=2.1,<3.0
