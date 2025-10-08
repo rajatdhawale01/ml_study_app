@@ -1,0 +1,125 @@
+{% extends "layout.html" %}
+{% block content %}
+<h1 class="text-2xl font-bold mb-4">Data Preparation — Theory (Pointwise)</h1>
+
+<!-- 1) Types of Data -->
+<section class="bg-white border rounded-xl p-4 shadow-sm mb-4">
+  <h2 class="text-lg font-semibold mb-2">1) Types of Data (know what you have)</h2>
+  <ul class="list-disc pl-6 text-gray-700 space-y-1">
+    <li><span class="font-medium">Tabular</span>: rows = examples, columns = features. Mixed numeric/categorical.</li>
+    <li><span class="font-medium">Time Series</span>: ordered; autocorrelation; beware shuffling (future leakage).</li>
+    <li><span class="font-medium">Text</span>: needs tokenization/embeddings; vocab drift over time.</li>
+    <li><span class="font-medium">Images / Audio</span>: high-dimensional; augmentation & specialized models common.</li>
+    <li><span class="font-medium">Categorical</span>: nominal (no order) vs ordinal (has order) — encoding differs.</li>
+    <li><span class="font-medium">Targets</span>: binary / multi-class / multi-label / continuous — drives metrics & loss.</li>
+  </ul>
+</section>
+
+<!-- 2) Cleaning -->
+<section class="bg-white border rounded-xl p-4 shadow-sm mb-4">
+  <h2 class="text-lg font-semibold mb-2">2) Cleaning (make the data trustworthy)</h2>
+  <ul class="list-disc pl-6 text-gray-700 space-y-1">
+    <li>Drop exact duplicates; investigate near-duplicates (may be leakage).</li>
+    <li>Missingness: understand MCAR/MAR/MNAR; start with median (num) / mode (cat).</li>
+    <li>Validate values (negative ages, impossible timestamps); correct or remove.</li>
+    <li>Normalize text & categories (trim/lower/unicode; “NY” ≈ “New York”).</li>
+    <li>Parse datetimes; align timezones; derive parts later (Y/M/D/DoW/lag).</li>
+    <li>Outliers: clip/winsorize if they harm metrics; keep if they’re signal (e.g., fraud).</li>
+  </ul>
+</section>
+
+<!-- 3) Preprocessing -->
+<section class="bg-white border rounded-xl p-4 shadow-sm mb-4">
+  <h2 class="text-lg font-semibold mb-2">3) Preprocessing (prepare features safely)</h2>
+  <ul class="list-disc pl-6 text-gray-700 space-y-1">
+    <li><span class="font-medium">Fit on train only</span>: imputer/scaler/encoder fit on train folds → apply to val/test.</li>
+    <li><span class="font-medium">Scaling</span>: needed for KNN/SVM/Logistic; not needed for trees/forests/boosting.</li>
+    <li><span class="font-medium">Encoding</span>:
+      <ul class="list-disc pl-6">
+        <li>One-hot (safe baseline for nominal) — can increase dimensions.</li>
+        <li>Ordinal codes (trees) — don’t imply order unless real.</li>
+        <li>Target/mean encoding — powerful; must be CV-folded to avoid leakage.</li>
+      </ul>
+    </li>
+    <li>Class imbalance: class weights, resampling (SMOTE/undersample), threshold tuning, PR-AUC.</li>
+    <li>Text: TF-IDF/embeddings; lowercasing/stopwords are task-dependent; handle OOV.</li>
+    <li>Time series: no shuffling; consider windowed scaling if drift exists.</li>
+  </ul>
+</section>
+
+<!-- 4) Feature Engineering -->
+<section class="bg-white border rounded-xl p-4 shadow-sm mb-4">
+  <h2 class="text-lg font-semibold mb-2">4) Feature Engineering (add signal, reduce noise)</h2>
+  <ul class="list-disc pl-6 text-gray-700 space-y-1">
+    <li>Domain features: ratios, rates, business rules.</li>
+    <li>Transforms: log for heavy-tailed positives; binning for monotonic effects; polynomial for simple nonlinearity.</li>
+    <li>Interactions: A×B crosses or let trees/boosting learn them.</li>
+    <li>Time features: lags, rolling stats, time-since-event — preserve temporal order.</li>
+    <li>Dimensionality reduction: PCA for compression/denoising; UMAP/t-SNE for visualization (not typical in prod models).</li>
+  </ul>
+</section>
+
+<!-- 5) Feature Selection -->
+<section class="bg-white border rounded-xl p-4 shadow-sm mb-4">
+  <h2 class="text-lg font-semibold mb-2">5) Feature Selection (keep what matters)</h2>
+  <ul class="list-disc pl-6 text-gray-700 space-y-1">
+    <li>Filter: variance threshold; correlation prune (drop one of a highly correlated pair).</li>
+    <li>Wrapper: RFE with CV; greedy forward/backward (costly, careful).</li>
+    <li>Embedded: L1/L2 regularization, tree importances, permutation importance.</li>
+    <li>Start light — over-pruning can remove useful interactions.</li>
+  </ul>
+</section>
+
+<!-- 6) Splitting & Validation -->
+<section class="bg-white border rounded-xl p-4 shadow-sm mb-4">
+  <h2 class="text-lg font-semibold mb-2">6) Splitting & Validation (measure generalization)</h2>
+  <ul class="list-disc pl-6 text-gray-700 space-y-1">
+    <li>Holdout test kept untouched; tune on K-fold/Stratified K-fold over train.</li>
+    <li>Respect groups/sessions/users (GroupKFold) to avoid leakage.</li>
+    <li>Time series: rolling/expanding windows; never peek into the future.</li>
+    <li>Pick metrics to match the objective (PR-AUC/F1 for rare positives; AUC for ranking).</li>
+  </ul>
+</section>
+
+<!-- 7) Leakage, Robustness, Reproducibility -->
+<section class="bg-white border rounded-xl p-4 shadow-sm mb-4">
+  <h2 class="text-lg font-semibold mb-2">7) Leakage, Robustness & Reproducibility</h2>
+  <ul class="list-disc pl-6 text-gray-700 space-y-1">
+    <li>Leakage: post-event fields, global encodings on full data, future info.</li>
+    <li>Pipelines: package preprocessors + model so inference mirrors training.</li>
+    <li>Seeds & logging: set random_state; log data versions/params/metrics; save artifacts.</li>
+    <li>Monitoring: input/target drift, data quality, performance decay; plan retraining.</li>
+  </ul>
+</section>
+
+<!-- 8) Commonly Missed -->
+<section class="bg-white border rounded-xl p-4 shadow-sm mb-6">
+  <h2 class="text-lg font-semibold mb-2">8) Commonly Missed</h2>
+  <ul class="list-disc pl-6 text-gray-700 space-y-1">
+    <li>Fitting encoders/scalers on full data (should be train-only).</li>
+    <li>Randomly shuffling temporal data (introduces future info).</li>
+    <li>Using accuracy on imbalance; ignoring calibration when probabilities matter.</li>
+    <li>Mismatched preprocessing between train and inference.</li>
+    <li>Not checking label noise or target definition changes over time.</li>
+  </ul>
+</section>
+
+<!-- Next Steps -->
+<section class="bg-white border rounded-xl p-4 shadow-sm">
+  <h2 class="text-lg font-semibold mb-3">Next steps</h2>
+  <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+    <a href="{{ url_for('process') }}" class="block border rounded-xl p-3 hover:shadow transition">
+      <div class="font-semibold mb-1">Process (Hands-on)</div>
+      <p class="text-sm text-gray-600">Walk the end-to-end classification skeleton with one-line code hints.</p>
+    </a>
+    <a href="{{ url_for('mindmap') }}" class="block border rounded-xl p-3 hover:shadow transition">
+      <div class="font-semibold mb-1">Interactive Mind Map</div>
+      <p class="text-sm text-gray-600">Explore models, theory, and common parameters with search & TTS.</p>
+    </a>
+    <a href="{{ url_for('intro') }}" class="block border rounded-xl p-3 hover:shadow transition">
+      <div class="font-semibold mb-1">Intro Recap</div>
+      <p class="text-sm text-gray-600">Review core concepts and when to use ML.</p>
+    </a>
+  </div>
+</section>
+{% endblock %}

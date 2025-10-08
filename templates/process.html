@@ -1,0 +1,141 @@
+{% extends "layout.html" %}
+{% block content %}
+<h1 class="text-2xl font-bold mb-4">ML Process — Classification (End-to-End Skeleton)</h1>
+
+<p class="text-gray-700 mb-4">
+  Goal: get a clean <span class="font-medium">X (features)</span> and <span class="font-medium">y (target)</span> ready for a
+  classification model. Below are the most common steps with one-line code hints. We assume you already have a
+  pandas DataFrame named <code>df</code> (and typical utilities like <code>pd</code>, <code>sklearn</code> are available).
+</p>
+
+<!-- 0. Understand the data -->
+<section class="bg-white border rounded-xl p-4 shadow-sm mb-4">
+  <h2 class="text-lg font-semibold mb-2">0) Quick Data Understanding</h2>
+  <p class="text-gray-700">Get a feel for shape, dtypes, missingness, basic stats.</p>
+  <pre class="bg-gray-900 text-gray-100 p-3 rounded-md overflow-x-auto text-sm"><code># shape, types, preview, missingness
+df.shape, df.dtypes, df.head(3), df.isna().mean().sort_values(ascending=False).head(10)</code></pre>
+</section>
+
+<!-- 1. Define target -->
+<section class="bg-white border rounded-xl p-4 shadow-sm mb-4">
+  <h2 class="text-lg font-semibold mb-2">1) Define Target (y)</h2>
+  <p class="text-gray-700">Pick your classification label column, ensure it’s binary/multi-class as intended.</p>
+  <pre class="bg-gray-900 text-gray-100 p-3 rounded-md overflow-x-auto text-sm"><code># choose target column
+target = "label"</code></pre>
+</section>
+
+<!-- 2. Remove leakage / identifiers -->
+<section class="bg-white border rounded-xl p-4 shadow-sm mb-4">
+  <h2 class="text-lg font-semibold mb-2">2) Remove Obvious Leakage & Identifiers</h2>
+  <p class="text-gray-700">
+    Drop columns that reveal the answer or won’t help (IDs, post-outcome fields, free-text IDs).
+  </p>
+  <pre class="bg-gray-900 text-gray-100 p-3 rounded-md overflow-x-auto text-sm"><code># drop leakage / IDs
+leaky_or_ids = ["order_id","user_id","created_at"]
+df = df.drop(columns=[c for c in leaky_or_ids if c in df.columns])</code></pre>
+</section>
+
+<!-- 3. Basic cleaning: duplicates, missing -->
+<section class="bg-white border rounded-xl p-4 shadow-sm mb-4">
+  <h2 class="text-lg font-semibold mb-2">3) Basic Cleaning (Duplicates & Missing)</h2>
+  <p class="text-gray-700">
+    Remove duplicate rows; fill or drop missing values (simple baseline: median for numeric, mode for categorical).
+  </p>
+  <pre class="bg-gray-900 text-gray-100 p-3 rounded-md overflow-x-auto text-sm"><code># drop exact duplicates
+df = df.drop_duplicates()
+
+# simple impute (numeric→median, categorical→mode)
+num_cols = df.select_dtypes(include=["number"]).columns
+cat_cols = df.select_dtypes(include=["object","category","bool"]).columns
+df[num_cols] = df[num_cols].fillna(df[num_cols].median())
+df[cat_cols] = df[cat_cols].apply(lambda s: s.fillna(s.mode().iloc[0] if not s.mode().empty else s.iloc[0]))</code></pre>
+</section>
+
+<!-- 4. Outliers (simple winsor or clip) -->
+<section class="bg-white border rounded-xl p-4 shadow-sm mb-4">
+  <h2 class="text-lg font-semibold mb-2">4) Handle Outliers (Simple Clip/Winsor)</h2>
+  <p class="text-gray-700">
+    Robust baseline: clip numeric columns to the 1st–99th percentile to reduce extreme influence.
+  </p>
+  <pre class="bg-gray-900 text-gray-100 p-3 rounded-md overflow-x-auto text-sm"><code># clip numeric outliers to [p01, p99]
+p01 = df[num_cols].quantile(0.01); p99 = df[num_cols].quantile(0.99)
+df[num_cols] = df[num_cols].clip(lower=p01, upper=p99, axis=1)</code></pre>
+</section>
+
+<!-- 5. Encoding -->
+<section class="bg-white border rounded-xl p-4 shadow-sm mb-4">
+  <h2 class="text-lg font-semibold mb-2">5) Encode Labels & Categorical Features</h2>
+  <p class="text-gray-700">
+    For target: convert to 0/1 (if binary). For features: use one-hot (safe default) or ordinal codes (tree models).
+  </p>
+  <pre class="bg-gray-900 text-gray-100 p-3 rounded-md overflow-x-auto text-sm"><code># (a) binary target to 0/1
+df[target] = (df[target] == df[target].unique()[0]).astype(int)  # adjust logic as needed
+
+# (b) one-hot encode categoricals (drop_first to avoid dummy trap)
+df = pd.get_dummies(df, columns=[c for c in cat_cols if c != target], drop_first=True)
+
+# (c) OR ordinal codes (useful for tree models)
+# for c in cat_cols: 
+#     if c != target: df[c] = df[c].astype("category").cat.codes</code></pre>
+</section>
+
+<!-- 6. Feature scaling -->
+<section class="bg-white border rounded-xl p-4 shadow-sm mb-4">
+  <h2 class="text-lg font-semibold mb-2">6) Scale/Normalize (When Needed)</h2>
+  <p class="text-gray-700">
+    Scale numeric features for distance/kernel models (KNN, SVM, LR). Trees/forests/boosting don’t require it.
+  </p>
+  <pre class="bg-gray-900 text-gray-100 p-3 rounded-md overflow-x-auto text-sm"><code># simple z-score normalization (avoid scaling the target)
+scale_cols = [c for c in num_cols if c in df.columns and c != target]
+df[scale_cols] = (df[scale_cols] - df[scale_cols].mean()) / df[scale_cols].std(ddof=0)</code></pre>
+</section>
+
+<!-- 7. Feature definition / selection -->
+<section class="bg-white border rounded-xl p-4 shadow-sm mb-4">
+  <h2 class="text-lg font-semibold mb-2">7) Define Features (X) & Basic Selection</h2>
+  <p class="text-gray-700">
+    Start with all non-target columns; optionally prune near-constant or highly-correlated features.
+  </p>
+  <pre class="bg-gray-900 text-gray-100 p-3 rounded-md overflow-x-auto text-sm"><code># candidate features = all columns except target
+features = [c for c in df.columns if c != target]
+
+# drop near-constant features (very low variance)
+low_var = df[features].std(ddof=0)[lambda s: s.fillna(0) &lt; 1e-6].index.tolist()
+features = [c for c in features if c not in low_var]
+
+# drop one of each highly-correlated pair (|r| &gt; 0.95) — quick heuristic
+corr = df[features].corr().abs()
+upper = corr.where(~pd.np.tril(pd.np.ones(corr.shape, dtype=bool)))
+drop_corr = [c for c in upper.columns if any(upper[c] &gt; 0.95)]
+features = [c for c in features if c not in drop_corr]</code></pre>
+  <p class="text-xs text-gray-500 mt-2">
+    Notes: For rigorous selection, consider univariate tests, model-based importances, or recursive feature elimination —
+    but start simple to avoid premature pruning.
+  </p>
+</section>
+
+<!-- 8. Train/validation/test split -->
+<section class="bg-white border rounded-xl p-4 shadow-sm mb-4">
+  <h2 class="text-lg font-semibold mb-2">8) Train/Validation/Test Split</h2>
+  <p class="text-gray-700">
+    Use stratification for classification to preserve class ratios. Keep a final test set untouched.
+  </p>
+  <pre class="bg-gray-900 text-gray-100 p-3 rounded-md overflow-x-auto text-sm"><code># X/y and stratified split
+X, y = df[features], df[target]
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, stratify=y, random_state=42)</code></pre>
+  <p class="text-xs text-gray-500 mt-2">
+    For time-series, don’t shuffle; use chronological splits (rolling/expanding windows). Always fit preprocessing steps
+    on the <span class="font-medium">train</span> only, then apply to validation/test to avoid leakage.
+  </p>
+</section>
+
+<!-- 9. Baseline model (optional teaser) -->
+<section class="bg-white border rounded-xl p-4 shadow-sm">
+  <h2 class="text-lg font-semibold mb-2">9) (Optional) Quick Baseline Fit</h2>
+  <p class="text-gray-700">
+    Train something simple to confirm the pipeline works end-to-end before heavy tuning.
+  </p>
+  <pre class="bg-gray-900 text-gray-100 p-3 rounded-md overflow-x-auto text-sm"><code># baseline classifier (example)
+clf = LogisticRegression(max_iter=1000).fit(X_train, y_train); clf.score(X_test, y_test)</code></pre>
+</section>
+{% endblock %}

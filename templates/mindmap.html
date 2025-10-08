@@ -1,0 +1,19 @@
+{% extends "layout.html" %}
+{% block content %}
+<h1 class="text-2xl font-bold mb-4">Interactive ML Mind Map</h1>
+
+<section class="bg-white border rounded-xl p-4 shadow-sm">
+  <div id="ml-mind-map-root" class="min-h-[520px]"></div>
+</section>
+
+<!-- React UMD + ReactDOM UMD -->
+<script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+<script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+
+<!-- Babel (standalone) to transpile JSX in the browser -->
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+<!-- Load your JSX from static (NO inline JSX here, so Jinja won’t parse it) -->
+<script type="text/babel" data-presets="react"
+        src="{{ url_for('static', filename='js/mlmindmap.jsx') }}"></script>
+{% endblock %}
