@@ -6,8 +6,8 @@ app = Flask(__name__)
 app.secret_key = "replace-with-a-strong-secret-key"  # use env var in prod
 
 # reCAPTCHA keys (keep yours, or load from env)
-RECAPTCHA_SITE_KEY = "6LdlreIrAAAAAL-pqjgJu3HnwAgC_Rfm5Zoka2VH"
-RECAPTCHA_SECRET_KEY = "6LdlreIrAAAAACP98pCXpMgF3kqanwv41rZ9r6i3"
+RECAPTCHA_SITE_KEY = "6LdqruIrAAAAAC7EKNp258GNZhsosl2DoYBM48k8"
+RECAPTCHA_SECRET_KEY = "6LdqruIrAAAAAMpMUGfQU6mU2m2X1RYwtTUiMwVD"
 
 # Demo users (use DB + hashing in production)
 DEMO_USERS = {"rajat": "pass123", "admin": "admin123", "guest": "guest","student":"student","new_user":"new_password"}
